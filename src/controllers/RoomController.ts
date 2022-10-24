@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { BadRequestError, NotFoundError } from "../helpers/api-erros";
 import { roomRepository } from "../repositories/roomRepository";
 import { subjectRepository } from "../repositories/subjectRepository";
 import { videoRepository } from "../repositories/videoRepository";
@@ -9,19 +10,14 @@ export class RoomController {
     const { name, description } = req.body
 
     if (!name) {
-      return res.status(400).json({message: "Campo name é obrigatório"})
+      throw new BadRequestError("Campo name é obrigatório")
     }
 
-    try {
-      const newRoom = roomRepository.create({name, description})
+    const newRoom = roomRepository.create({name, description})
 
-      await roomRepository.save(newRoom)
+    await roomRepository.save(newRoom)
 
-      return res.status(201).json(newRoom)
-
-    } catch (error) {
-      return res.status(500).json({message: "Internal Server Error"})
-    }
+    return res.status(201).json(newRoom)
   }
 
   async createVideo(req: Request, res: Response) {
@@ -30,32 +26,28 @@ export class RoomController {
     const { idRoom } = req.params
 
     if (!title) {
-      return res.status(400).json({message: "Campo title é obrigatório"})
+      throw new BadRequestError("Campo title é obrigatório")
     }
+
     if (!url) {
-      return res.status(400).json({message: "Campo url é obrigatório"})
+      throw new BadRequestError("Campo url é obrigatório")
     }
 
-    try {
-      const room = await roomRepository.findOneBy({id: Number(idRoom)})
+    const room = await roomRepository.findOneBy({id: Number(idRoom)})
 
-      if(!room) {
-        return res.status(404).json({message: "Aula não existe"})
-      }
+    if(!room) {
+      throw new NotFoundError("Aula não existe")
+    }
 
-      const newVideo = videoRepository.create({
-        room,
-        title, 
-        url
+    const newVideo = videoRepository.create({
+      room,
+      title, 
+      url
       })
 
-      await videoRepository.save(newVideo)
+    await videoRepository.save(newVideo)
 
-      return res.status(201).json(newVideo)
-
-    } catch (error) {
-      return res.status(500).json({message: error.message})
-    }
+    return res.status(201).json(newVideo)
   }
 
   async roomSubject(req: Request, res: Response) {
@@ -63,17 +55,16 @@ export class RoomController {
     const { subject_id } = req.body
     const { idRoom } = req.params
 
-    try {
-      const room = await roomRepository.findOneBy({id: Number(idRoom)})
+    const room = await roomRepository.findOneBy({id: Number(idRoom)})
 
       if(!room) {
-        return res.status(404).json({message: "Aula não existe"})
+        throw new NotFoundError("Aula não existe")
       }
 
       const subject = await subjectRepository.findOneBy({id: Number(subject_id)})
 
       if(!subject) {
-        return res.status(404).json({message: "Disciplina não existe"})
+        throw new NotFoundError("Disciplina não existe")
       }
 
       const roomUpdate = {
@@ -84,25 +75,16 @@ export class RoomController {
       await roomRepository.save(roomUpdate)
 
       return res.status(204).send()
-
-    } catch (error) {
-      return res.status(500).json({message: error.message})
-    }
   }
 
   async list(req: Request, res: Response){
-    try {
-      const rooms = await roomRepository.find({
-        relations: {
-          subjects: true,
-          videos: true
-        }
-      })
+    const rooms = await roomRepository.find({
+      relations: {
+        subjects: true,
+        videos: true
+      }
+    })
 
-      return res.status(200).json(rooms)
-
-    } catch (error) {
-      return res.status(500).json({message: error.message})
-    }
+    return res.status(200).json(rooms)
   }
 }

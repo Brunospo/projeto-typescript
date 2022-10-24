@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { BadRequestError } from "../helpers/api-erros";
 import { subjectRepository } from "../repositories/subjectRepository";
 
 export class SubjectController {
@@ -6,19 +7,13 @@ export class SubjectController {
   const { name } = req.body
 
   if (!name){
-    return res.status(400).json({message: "Campo name é obrigatório"})
+    throw new BadRequestError("Campo name é obrigatório")
   }
 
-  try {
-    const newSubject = subjectRepository.create({ name })
+  const newSubject = subjectRepository.create({ name })
 
     await subjectRepository.save(newSubject)
 
     return res.status(201).json(newSubject)
-
-  } catch (error) {
-    return res.status(500).json({message: "Erro interno"})
-  }
-
  }
 }
